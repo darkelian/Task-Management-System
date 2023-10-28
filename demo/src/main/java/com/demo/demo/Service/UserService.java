@@ -5,17 +5,23 @@ import com.demo.demo.Models.Roles;
 import com.demo.demo.Models.Users;
 import com.demo.demo.Repositories.IRolesRepository;
 import com.demo.demo.Repositories.IUsersRepository;
+
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class UserService {
-
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     @Autowired
     private IUsersRepository usersRepository;
 
@@ -60,10 +66,17 @@ public class UserService {
         return usersRepository.findById(userId).orElse(null);
     }
 
+    @Transactional
     public boolean deleteUser(Long userId) {
-        if (usersRepository.existsById(userId)) {
-            usersRepository.deleteById(userId);
-            return true;
+        try {
+            if (usersRepository.existsById(userId)) {
+                usersRepository.deleteById(userId);
+                return true;
+            }
+        } catch (DataIntegrityViolationException e) {
+            logger.error("Error al eliminar el usuario con ID {}: {}", userId, e.getMessage());
+        } catch (Exception e) {
+            logger.error("Excepción inesperada al eliminar el usuario con ID {}: {}", userId, e.getMessage());
         }
         return false;
     }
